@@ -1,10 +1,15 @@
-let rec day5 (c: int) (i: int) (inc: int -> int) (input: array<int>) =
-    if (i > input.Length - 1) then c
+let rec day5 (c: int) (index: int) (inc: int -> int) (input: array<int>) =
+    if index > input.Length - 1 
+    then c
     else  
-        let jmp = input.[i]
-        let left = if (i-1 < 0) then [||] else input.[..i-1]
-        let right = if (i+1 > input.Length) then [||] else input.[i+1..]
-        day5 (c + 1) (i + jmp) inc (Array.concat [ left; [| inc jmp |]; right ])
+        let jmp = input.[index]
+        let left = if index-1 < 0 
+                   then [||] 
+                   else input.[..index-1]
+        let right = if index+1 > input.Length 
+                    then [||] 
+                    else input.[index+1..]
+        day5 (c + 1) (index + jmp) inc (Array.concat [ left; [| inc jmp |]; right ])
 
 let input = 
     System.IO.File.ReadAllLines "data/day5.txt" 
