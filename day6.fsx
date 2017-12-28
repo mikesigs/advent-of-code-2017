@@ -23,16 +23,24 @@ let rec divvy amount prevIndex ints =
 
 let hash = Array.fold (fun acc x -> acc + (sprintf "|%i" x)) ""
 
-let rec day6 c (prev: Set<string>) ints =
+let rec day6 c pattern (prev: Set<string>) ints =
     let max = Array.max ints
     let maxIndex = Array.findIndex ((=) max) ints 
     let newInts = divvy max maxIndex (splice maxIndex ((-) max) ints)
     let newHash = hash newInts
     //printfn "day6: max = %d, maxIndex = %d, newInts = %A, newHash = %s, prev = %A" max maxIndex newInts newHash prev
-    if (Set.contains newHash prev) then c+1
-    else day6 (c+1) (Set.add newHash prev) newInts
+    match pattern with
+    | Some p ->
+        if newHash = p then 
+            c+1
+        else 
+            day6 (c+1) pattern prev newInts
+    | None -> 
+        if (Set.contains newHash prev) 
+        then day6 0 (Some newHash) prev newInts
+        else day6 c pattern (Set.add newHash prev) newInts
 
-day6 0 Set.empty input //[|0;2;7;0;|]
+day6 0 None Set.empty input //[|0;2;7;0;|]
 
 
 
