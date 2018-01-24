@@ -1,4 +1,5 @@
 type Tree<'LeafData, 'INodeData> =
+    | Empty
     | Leaf of 'LeafData
     | Node of 'INodeData * Tree<'LeafData, 'INodeData> seq
 
@@ -19,6 +20,9 @@ let rec fold fLeaf fNode acc (tree:Tree<'LeafData, 'INodeData>) =
         let finalAcc = subTrees |> Seq.fold recurse localAcc
         finalAcc
 
+let node (nodeInfo: 'INodeData) subItems = 
+    Node (nodeInfo, subItems)
+
 let find predicate tree =
     let fLeaf (acc: int option) (leafInfo: int) =
         match acc with
@@ -36,47 +40,47 @@ let find predicate tree =
 
     fold fLeaf fNode None tree
 
-let insert parent child tree =
-    let fLeaf (acc: Tree<int,int> option) (leafInfo: int) =
-        match acc with
-        | None -> Node (leafInfo, [])
-        | Some _ ->
-            if leafInfo <> parent then
-                Leaf leafInfo
-            else
-                Node (leafInfo, [Leaf child])
-        |> Some
-
-    let fNode acc nodeInfo =
-        match acc with
-        | None -> Node (nodeInfo, [])
-        | Some x -> x
-        |> Some
-
-    fold fLeaf fNode None tree
-
-let thd (_,_,x) = x
-
-let getBranchChar = function
-| true ->  "└── "
-| false -> "├── "
-
-let getIndentChar = function
-| true ->  "    "
-| false -> "│   "
+let rec insertBy predicate value (tree: Tree<int, int>) =
+    match tree with
+    | Empty -> 
+        printfn "Empty"
+        Leaf value
+    | Node (nodeInfo, subItems) when predicate nodeInfo -> 
+        printfn "Node %A -> %A" nodeInfo value
+        node nodeInfo (Seq.append [Leaf value] subItems)
+    | Node (nodeInfo, subItems) ->
+        printfn "Not Node"
+        node nodeInfo (Seq.map (fun subItem -> insertBy predicate value subItem) subItems)
+    | Leaf leafInfo when predicate leafInfo ->
+        printfn "Leaf %A -> %A" leafInfo value
+        node leafInfo [Leaf value]
+    | _ -> 
+        printfn "Else"
+        tree
 
 let print (tree: Tree<int,int>) =
+
+    let thd (_,_,x) = x
+
+    let getBranchChar = function
+    | true ->  "└── "
+    | false -> "├── "
+
+    let getIndentChar = function
+    | true ->  "    "
+    | false -> "│   "
+
     let rec recurse state node =
         let isTail, indent, acc = state
         let bc = getBranchChar isTail
         let indentStr = acc + indent + bc
 
         match node with
-        | Leaf x ->
-            let str = indentStr + (x |> string)
+        | Leaf value ->
+            let str = indentStr + (value |> string)
             isTail, indent, str
-        | Node (x, subTrees) ->
-            let str = indentStr + (x |> string)
+        | Node (value, subTrees) ->
+            let str = indentStr + (value |> string)
             let childIndent = indent + getIndentChar isTail
 
             let left, right =
@@ -98,7 +102,7 @@ let print (tree: Tree<int,int>) =
 
     recurse (true, "\n", "") tree |> thd
 
-let data =
+let data1 =
     (Node (1,
         [Leaf 10
          Leaf 11
@@ -120,7 +124,7 @@ let data =
             [Leaf 50]))
         ]))
 
-let data1 =
+let data2 =
     (Node (1,
         [(Node (2,
             [Leaf 4 ; Leaf 5]))
@@ -130,7 +134,21 @@ let data1 =
             ]))
         ]))
 
-data |> find ((=) 1)
-data |> insert 13 99
+data1 |> find ((=) 1)
+
+let isParent p x = p = x
+
+insertBy ((=) 1) 1 Empty 
+|> insertBy (isParent 1) 10
+|> insertBy (isParent 1) 11
+|> insertBy (isParent 1) 2
+|> insertBy (isParent 1) 3
+|> insertBy (isParent 2) 20
+|> insertBy (isParent 2) 21
+|> insertBy (isParent 3) 30
+|> insertBy (isParent 3) 31
+|> insertBy (isParent 11) 110
+|> insertBy (isParent 3) 32
+|> print
+
 data1 |> print
-data |> print
